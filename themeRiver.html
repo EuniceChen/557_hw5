@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Test</title>
+        <script src="https://d3js.org/d3.v4.js"></script>
+    </head>
+
+    <style type="text/css">
+        svg {
+            margin-left: 10vw;
+            margin-right: 10vw;
+            margin-top: 10vh;
+            margin-bottom: 20vh;
+        }
+
+        .xAxis path{
+            stroke-width: 1px;
+        }
+
+        .xAxis .tick line {
+            display: none;
+        }
+
+        .yAxis path{
+            stroke-width: 1px;
+        }
+
+        .yAxis .tick line {
+            display: none;
+        }
+    </style>
+
+    <body>
+        <section class="canvas">
+            <div class="chart"></div>
+        </section> 
+        <script type="text/javascript">
+            //d3 code here!
+            
+            //setup canvas
+            var margin = {top: 0.1, bottom: 0.3, left: 0.1, right: 0.1},
+                width = screen.width * (1 - margin.left - margin.right),
+                height = screen.height * (1 - margin.top - margin.bottom);
+
+            var canvas = d3.select(".chart")
+                        .append("svg")
+                        .attr("width", width)
+                        .attr("height", height);
+
+            themeRiver("ratings.csv");            
+
+            function themeRiver(filename) {
+                var data = d3.csv(filename, function(data) {
+
+                    var keyName = "Year"
+                    // get all keys
+                    var keys = [];
+                    for(key in data[0]) {
+                        if(key != keyName) {
+                            keys.push(key);
+                        }
+                    }
+
+                    // find maximum and minimum values
+                    var minX = d3.min(data, function(d) {
+                        return d.Year;
+                    });
+                    var maxX = d3.max(data, function(d) {
+                        return d.Year;
+                    })
+
+                    var maxY = d3.max(data, function(d) {
+                        var sum = 0;
+                        keys.forEach(function(k) {
+                            sum += +d[k];
+                        });
+                        return sum;
+                    });
+                    var minY = d3.min(data, function(d) {
+                        var sum = 0;
+                        keys.forEach(function(k) {
+                            sum += +d[k];
+                        });
+                        return sum;
+                    });
+
+                    // scale
+                    var xScale = d3.scaleLinear()
+                        .domain([minX,maxX])
+                        .range([0, width - 100]);
+
+                    var yScale = d3.scaleLinear()
+                        .domain([0, maxY])
+                        .range([height - 20, 0]);
+
+                    
+
+                    var colorScale = ['#00441b', '#006d2c', '#31a354', '#74c476', '#a1d99b', '#c7e9c0', '#edf8e9'];
+
+                    var stacks = d3.stack()
+                        .keys(keys)
+                        .order(d3.stackOrderNone)
+                        .offset(d3.stackOffsetSilhouette)(data);
+
+                    console.log(stacks);
+
+                    var area = d3.area()
+                        .x(function(d) {
+                            return xScale(d.data[keyName]); 
+                        })
+                        .y0(function(d) {  return yScale(d[1]); })
+                        .y1(function(d) {  return yScale(d[0]); })
+                        .curve(d3.curveCatmullRom.alpha(0.5));
+
+                    canvas.selectAll("path")
+                        .data(stacks)
+                        .enter() 
+                        .append("path")
+                        .style("fill", function(d, i) {
+                            return colorScale[i + 1];
+                        })
+                        
+                        .attr("class", "path")
+                        .attr("d", function(d) {
+                            return area(d);
+                        })
+                        .attr("transform", function() {
+                            return "translate(100," + ((-height) / 2 + 10) + ")"
+                        });
+
+                    var yAxis = d3.axisLeft(yScale);
+                    canvas.append("g").attr("transform", "translate(100, 0)")
+                    .attr("class", "yAxis")
+                    .call(yAxis);
+
+                    var xAxis = d3.axisBottom(xScale);
+                    canvas.append("g").attr("transform", function() {
+                        return "translate(100," + (height - 20) +")";
+                    })
+                    .attr("class", "xAxis")
+                    .call(xAxis);
+
+
+                });
+            }          
+
+        </script>
+    </body>
+</html>
