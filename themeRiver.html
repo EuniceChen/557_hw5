@@ -29,6 +29,19 @@
         .yAxis .tick line {
             display: none;
         }
+
+        div.tooltip {   
+            position: absolute;         
+            text-align: center;         
+            width: 200px;                    
+            height: 20px;                   
+            padding: 2px;               
+            font: 12px sans-serif;      
+            background: lightsalmon;    
+            border: 0px;        
+            border-radius: 8px;         
+            pointer-events: none;           
+        }
     </style>
 
     <body>
@@ -51,6 +64,11 @@
             themeRiver("ratings.csv");            
 
             function themeRiver(filename) {
+
+                var tooltip = d3.select("body").append("div")   
+                .attr("class", "tooltip")               
+                .style("opacity", 0);
+
                 var data = d3.csv(filename, function(data) {
 
                     var keyName = "Year"
@@ -94,7 +112,8 @@
                         .domain([0, maxY])
                         .range([height - 20, 0]);
 
-                    
+                    // x positions
+                    var xPositions = {};
 
                     var colorScale = ['#00441b', '#006d2c', '#31a354', '#74c476', '#a1d99b', '#c7e9c0', '#edf8e9'];
 
@@ -107,6 +126,10 @@
 
                     var area = d3.area()
                         .x(function(d) {
+                            //console.log(xPositions[xScale(d.data[keyName])]);
+                            if(!xPositions.hasOwnProperty(xScale(d.data[keyName]))) {
+                                xPositions[xScale(d.data[keyName])] = d.data[keyName];
+                            }
                             return xScale(d.data[keyName]); 
                         })
                         .y0(function(d) {  return yScale(d[1]); })
@@ -120,14 +143,79 @@
                         .style("fill", function(d, i) {
                             return colorScale[i + 1];
                         })
-                        
                         .attr("class", "path")
                         .attr("d", function(d) {
                             return area(d);
                         })
                         .attr("transform", function() {
                             return "translate(100," + ((-height) / 2 + 10) + ")"
+                        })
+                        .on("mouseover", function(d) {
+                            var mousePos = [0, 0];
+                            mouse = d3.mouse(this);
+                            var index = compareKey(mouse[0]);
+
+                            tooltip.html(d.key + " in " + d[index]["data"][keyName] + ": " + d[index]["data"][d.key])
+                            .style("left", (d3.event.pageX) + "px")     
+                            .style("top", (d3.event.pageY - 28) + "px")
+                            .style("opacity", .9);  
+
+                            var lineX = xScale(d[index]["data"][keyName]), lineY1 = yScale(maxY), lineY2 = yScale(0);
+                            canvas.append("line")
+                                .attr("id", "tipLine")
+                                .attr("x1", lineX)
+                                .attr("y1", lineY1)
+                                .attr("x2", lineX)
+                                .attr("y2", lineY2)
+                                .style("stroke", "black")
+                                .attr("transform", function() {
+                                    return "translate(100, 0)"
+                                });
+                        })
+                        .on("mousemove", function(d) {
+                            tooltip.style("opacity", 0);
+                            d3.select("#tipLine").remove();
+
+                            var mousePos = [0, 0];
+                            mouse = d3.mouse(this);
+                            var index = compareKey(mouse[0]);
+
+                            tooltip.html(d.key + " in " + d[index]["data"][keyName] + ": " + d[index]["data"][d.key])
+                            .style("left", (d3.event.pageX) + "px")     
+                            .style("top", (d3.event.pageY - 28) + "px")
+                            .style("opacity", .9); 
+
+                            var lineX = keys[index], lineY1 = yScale(maxY), lineY2 = yScale(0);
+
+                            canvas.append("line")
+                                .attr("id", "tipLine")
+                                .attr("x1", lineX)
+                                .attr("y1", lineY1)
+                                .attr("x2", lineX)
+                                .attr("y2", lineY2)
+                                .style("stroke", "black")
+                                .attr("transform", function() {
+                                    return "translate(100, 0)"
+                                });;
+
+                        })                  
+                        .on("mouseout", function(d) {   
+                            d3.select("#tipLine").remove();        
+                            tooltip.style("opacity", 0);    
                         });
+
+                    var keys = Object.keys(xPositions).sort(function(a,b){return xPositions[a]-xPositions[b]}),
+                        i, len = keys.length;
+
+                    function compareKey(key) {
+                        for (i = 0; i < len; i++) {
+                            if(i == len - 1) return i;
+                            var k1 = keys[i], k2 = keys[i + 1];
+                            if(parseFloat(k1) <= parseFloat(key) && parseFloat(k2) >= parseFloat(key)) {
+                                return (key - k1) <= (k2 - key) ? i : i + 1;
+                            }
+                        }
+                    }
 
                     var yAxis = d3.axisLeft(yScale);
                     canvas.append("g").attr("transform", "translate(100, 0)")
@@ -140,10 +228,10 @@
                     })
                     .attr("class", "xAxis")
                     .call(xAxis);
-
-
                 });
-            }          
+            }     
+
+
 
         </script>
     </body>
