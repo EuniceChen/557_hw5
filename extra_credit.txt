@@ -1,0 +1,4 @@
+Real-world data used: Stock volume of each month in last year (2016)
+
+	resource: http://finance.yahoo.com/most-active
+

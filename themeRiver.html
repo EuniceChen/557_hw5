@@ -7,6 +7,10 @@
     </head>
 
     <style type="text/css">
+        h1 {
+            text-align: center;
+        }
+
         svg {
             margin-left: 10vw;
             margin-right: 10vw;
@@ -45,6 +49,7 @@
     </style>
 
     <body>
+        <h1>2016 Stock Volume of Some Technology Companies in each Month</h1>
         <section class="canvas">
             <div class="chart"></div>
         </section> 
@@ -61,7 +66,7 @@
                         .attr("width", width)
                         .attr("height", height);
 
-            themeRiver("ratings.csv");            
+            themeRiver("stock_data.csv");            
 
             function themeRiver(filename) {
 
@@ -70,8 +75,8 @@
                 .style("opacity", 0);
 
                 var data = d3.csv(filename, function(data) {
-
-                    var keyName = "Year"
+                    console.log(data);
+                    var keyName = "Month";
                     // get all keys
                     var keys = [];
                     for(key in data[0]) {
@@ -82,10 +87,10 @@
 
                     // find maximum and minimum values
                     var minX = d3.min(data, function(d) {
-                        return d.Year;
+                        return parseInt(d[keyName]);
                     });
                     var maxX = d3.max(data, function(d) {
-                        return d.Year;
+                        return parseInt(d[keyName]);
                     })
 
                     var maxY = d3.max(data, function(d) {
@@ -136,26 +141,31 @@
                         .y1(function(d) {  return yScale(d[0]); })
                         .curve(d3.curveCatmullRom.alpha(0.5));
 
+                    var colorRecord = {};
                     canvas.selectAll("path")
                         .data(stacks)
                         .enter() 
                         .append("path")
                         .style("fill", function(d, i) {
+                            colorRecord[d.key] = colorScale[i + 1];
                             return colorScale[i + 1];
                         })
                         .attr("class", "path")
+                        .attr("id", function(d) {
+                            return d.key;
+                        })
                         .attr("d", function(d) {
                             return area(d);
                         })
                         .attr("transform", function() {
-                            return "translate(100," + ((-height) / 2 + 10) + ")"
+                            return "translate(80," + ((-height) / 2 + 10) + ")"
                         })
                         .on("mouseover", function(d) {
                             var mousePos = [0, 0];
                             mouse = d3.mouse(this);
                             var index = compareKey(mouse[0]);
 
-                            tooltip.html(d.key + " in " + d[index]["data"][keyName] + ": " + d[index]["data"][d.key])
+                            tooltip.html(d.key + ", " + d[index]["data"][keyName] + ", " + d[index]["data"][d.key])
                             .style("left", (d3.event.pageX) + "px")     
                             .style("top", (d3.event.pageY - 28) + "px")
                             .style("opacity", .9);  
@@ -169,18 +179,22 @@
                                 .attr("y2", lineY2)
                                 .style("stroke", "black")
                                 .attr("transform", function() {
-                                    return "translate(100, 0)"
+                                    return "translate(80, 0)"
                                 });
+
+
+                            d3.select("#" + d.key).style("fill", colorScale[0]);
                         })
                         .on("mousemove", function(d) {
                             tooltip.style("opacity", 0);
                             d3.select("#tipLine").remove();
+                            d3.select("#" + d.key).style("fill", colorRecord[d.key]); 
 
                             var mousePos = [0, 0];
                             mouse = d3.mouse(this);
                             var index = compareKey(mouse[0]);
 
-                            tooltip.html(d.key + " in " + d[index]["data"][keyName] + ": " + d[index]["data"][d.key])
+                            tooltip.html(d.key + ", " + d[index]["data"][keyName] + ", " + d[index]["data"][d.key])
                             .style("left", (d3.event.pageX) + "px")     
                             .style("top", (d3.event.pageY - 28) + "px")
                             .style("opacity", .9); 
@@ -195,14 +209,17 @@
                                 .attr("y2", lineY2)
                                 .style("stroke", "black")
                                 .attr("transform", function() {
-                                    return "translate(100, 0)"
+                                    return "translate(80, 0)"
                                 });;
-
+                            d3.select("#" + d.key).style("fill", colorScale[0]);
                         })                  
                         .on("mouseout", function(d) {   
                             d3.select("#tipLine").remove();        
-                            tooltip.style("opacity", 0);    
+                            tooltip.style("opacity", 0);   
+                            d3.select("#" + d.key).style("fill", colorRecord[d.key]); 
                         });
+
+                    console.log(colorRecord);
 
                     var keys = Object.keys(xPositions).sort(function(a,b){return xPositions[a]-xPositions[b]}),
                         i, len = keys.length;
@@ -218,21 +235,18 @@
                     }
 
                     var yAxis = d3.axisLeft(yScale);
-                    canvas.append("g").attr("transform", "translate(100, 0)")
+                    canvas.append("g").attr("transform", "translate(80, 0)")
                     .attr("class", "yAxis")
                     .call(yAxis);
 
                     var xAxis = d3.axisBottom(xScale);
                     canvas.append("g").attr("transform", function() {
-                        return "translate(100," + (height - 20) +")";
+                        return "translate(80," + (height - 20) +")";
                     })
                     .attr("class", "xAxis")
                     .call(xAxis);
                 });
-            }     
-
-
-
+            }
         </script>
     </body>
 </html>
